@@ -28,6 +28,11 @@ while True:
         time.sleep(2)
 #my_posts= [{"title":"First Post","content":"First post content","id":1},{"title":"second Post","content":"second post content","id":2}]
 
+def find_post(id):
+    for p in post:
+        if p["id"] == id:
+            return p
+
 @app.get("/")
 async def root():
     return {"message": "hello world !!sksdksdfkdsj! "}
@@ -47,7 +52,22 @@ def createPost(post : Post):
      # conveting into a dict for easy readablity
      return {"data": new_post}
 
-@app.get("/posts/{id}")
+
+@app.get("/posts/{id}",status_code=status.HTTP_204_NO_CONTENT)
 async def get_post(id: int):
-    #post = find_post(id)
+    cursor.execute("""SELECT * FROM posts where id = %s """, str((id)))
+    post = cursor.fetchone()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} was not found")
     return {"data": post}
+
+@app.delete("/posts/{id}",status_code=status.HTTP_204_NO_CONTENT)
+async def delete_post(id: int):
+    cursor.execute("""DELETE FROM posts where id = %s returning * """,(str(id)))
+    deleted_post = cursor.fetchone()
+    conn.commit()
+
+    if deleted_post == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} does not exist")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
