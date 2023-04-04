@@ -28,11 +28,6 @@ while True:
         time.sleep(2)
 #my_posts= [{"title":"First Post","content":"First post content","id":1},{"title":"second Post","content":"second post content","id":2}]
 
-def find_post(id):
-    for p in post:
-        if p["id"] == id:
-            return p
-
 @app.get("/")
 async def root():
     return {"message": "hello world !!sksdksdfkdsj! "}
@@ -71,3 +66,14 @@ async def delete_post(id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} does not exist")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@app.put("/posts/{id}")
+async def update_post(id: int, post:Post):
+    cursor.execute("""UPDATE posts SET title = %s , content = %s , published = %s WHERE ID =  %s RETURNING *""",
+                   (post.title, post.content, post.publish, str(id)))
+    UPDATED_post = cursor.fetchone()
+    conn.commit()
+
+    if UPDATED_post == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} was not found")
+    return {"data": UPDATED_post}
