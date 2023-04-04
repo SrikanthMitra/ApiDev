@@ -7,8 +7,19 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from random import randrange
 import time
+from . import Models
+from .database import engine,SessionLocal
+from sqlalchemy.orm import Session
+Models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 class Post(BaseModel):
     title: str
@@ -31,6 +42,10 @@ while True:
 @app.get("/")
 async def root():
     return {"message": "hello world !!sksdksdfkdsj! "}
+
+@app.get("/sqlalchemy")
+async def test_posts(db: Session = Depends(get_db)):
+    return {"status":"Sucess "}
 
 @app.get("/posts")
 async def get_posts():
