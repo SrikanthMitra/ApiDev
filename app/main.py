@@ -8,25 +8,20 @@ from psycopg2.extras import RealDictCursor
 from random import randrange
 import time
 from . import Models
-from .database import engine,SessionLocal
+from .database import engine, get_db
 from sqlalchemy.orm import Session
 Models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 class Post(BaseModel):
     title: str
     content: str
     #createtime : datetime.datetime
-    publish: bool = False  #setting defalut value as False , only save post. FE will give an notify to publish
-    rating: Optional[int] = None
+    publised: bool  #setting defalut value as False , only save post. FE will give an notify to publish
+
 while True:
     try:
         conn = psycopg2.connect(host='localhost',database = 'fastapi', user= 'postgres', password = 'password', cursor_factory=RealDictCursor)
@@ -45,28 +40,38 @@ async def root():
 
 @app.get("/sqlalchemy")
 async def test_posts(db: Session = Depends(get_db)):
-    return {"status":"Sucess "}
-
-@app.get("/posts")
-async def get_posts():
-    cursor.execute("""SELECT * FROM posts""")
-    posts = cursor.fetchall()
+    posts = db.query(Models.Post).all()
     print(posts)
     return {"data": posts}
 
+@app.get("/posts")
+async def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(Models.Post).all()
+    #cursor.execute("""SELECT * FROM posts""")
+    #posts = cursor.fetchall()
+    #print(posts)
+    return {"data": posts}
+
 @app.post("/posts",status_code=status.HTTP_201_CREATED)
-def createPost(post : Post):
-     cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title , post.content, post.publish))
-     new_post = cursor.fetchone()
-     conn.commit()
+def createPost(post : Post, db: Session = Depends(get_db)):
+     #print(**post.dict())
+     new_post = Models.Post(**post.dict())
+     db.add(new_post)
+     db.commit()
+     db.refresh(new_post)
+     #cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title , post.content, post.publish))
+     #new_post = cursor.fetchone()
+     #conn.commit()
      # conveting into a dict for easy readablity
      return {"data": new_post}
 
 
-@app.get("/posts/{id}",status_code=status.HTTP_204_NO_CONTENT)
-async def get_post(id: int):
-    cursor.execute("""SELECT * FROM posts where id = %s """, str((id)))
-    post = cursor.fetchone()
+@app.get("/posts/{id}")
+async def get_post(id: int,db: Session = Depends(get_db)):
+    #cursor.execute("""SELECT * FROM posts where id = %s """, str((id)))
+    #post = cursor.fetchone()
+    post = db.query(Models.Post).filter(Models.Post.id == id).first()
+
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} was not found")
     return {"data": post}
