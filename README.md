@@ -12,5 +12,4 @@ Side Hustle.
 -Sri
 
 >Project is still under progress
->YT Link: https://www.youtube.com/watch?v=ToXOb-lpipM
 
