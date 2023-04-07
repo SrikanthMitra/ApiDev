@@ -1,6 +1,5 @@
 from fastapi import *
 from fastapi.params import Body
-from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 import psycopg2
@@ -11,25 +10,17 @@ from . import Models
 from .database import engine, get_db
 from sqlalchemy.orm import Session
 Models.Base.metadata.create_all(bind=engine)
-
+from .schemas import Post
 app = FastAPI()
-
-
-
-class Post(BaseModel):
-    title: str
-    content: str
-    #createtime : datetime.datetime
-    publised: bool  #setting defalut value as False , only save post. FE will give an notify to publish
 
 while True:
     try:
         conn = psycopg2.connect(host='localhost',database = 'fastapi', user= 'postgres', password = 'password', cursor_factory=RealDictCursor)
         cursor = conn.cursor()
-        print("Dataase connection sucessfull")
+        print("Database connection sucessfull")
         break
     except Exception as error:
-        print("connectiing to DB Failed")
+        print("Connection to DB Failed, Check the error")
         print("Error ",error)
         time.sleep(2)
 #my_posts= [{"title":"First Post","content":"First post content","id":1},{"title":"second Post","content":"second post content","id":2}]
@@ -77,23 +68,38 @@ async def get_post(id: int,db: Session = Depends(get_db)):
     return {"data": post}
 
 @app.delete("/posts/{id}",status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id: int):
-    cursor.execute("""DELETE FROM posts where id = %s returning * """,(str(id)))
-    deleted_post = cursor.fetchone()
-    conn.commit()
+async def delete_post(id: int, db: Session = Depends(get_db)):
+    #cursor.execute("""DELETE FROM posts where id = %s returning * """,(str(id)))
+    #deleted_post = cursor.fetchone()
+    #conn.commit()
 
-    if deleted_post == None:
+    post = db.query(Models.Post).filter(Models.Post.id == id)
+    fp = post.first()
+
+    if fp == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} does not exist")
+    post.delete(synchronize_session = False)
+    db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-async def update_post(id: int, post:Post):
-    cursor.execute("""UPDATE posts SET title = %s , content = %s , published = %s WHERE ID =  %s RETURNING *""",
-                   (post.title, post.content, post.publish, str(id)))
-    UPDATED_post = cursor.fetchone()
-    conn.commit()
+async def update_post(id: int, updated_post:Post, db: Session = Depends(get_db)):
+    #cursor.execute("""UPDATE posts SET title = %s , content = %s , published = %s WHERE ID =  %s RETURNING *""",
+        #              (post.title, post.content, post.publish, str(id)))
+    #UPDATED_post = cursor.fetchone()
+    #conn.commit()
 
-    if UPDATED_post == None:
+    post_query = db.query(Models.Post).filter(Models.Post.id == id)
+    post = post_query.first()
+
+    if post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} was not found")
-    return {"data": UPDATED_post}
+
+    post_query.update(updated_post.dict(), synchronize_session = False)
+
+    db.commit()
+
+    updated_post2 = post_query.first()
+
+    return {"data": updated_post2}
