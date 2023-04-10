@@ -20,7 +20,7 @@ while True:
         print("Database connection sucessfull")
         break
     except Exception as error:
-        print("Connection to DB Failed, Check the error")
+        print("Connection to DB Failed, Check the error  ")
         print("Error ",error)
         time.sleep(2)
 #my_posts= [{"title":"First Post","content":"First post content","id":1},{"title":"second Post","content":"second post content","id":2}]
