@@ -10,7 +10,7 @@ from . import Models
 from .database import engine, get_db
 from sqlalchemy.orm import Session
 Models.Base.metadata.create_all(bind=engine)
-from .schemas import PostBase , PostCreate , PostRespose
+from .schemas import PostBase , PostCreate , PostRespose , userCreate , userOut
 app = FastAPI()
 
 while True:
@@ -103,3 +103,20 @@ async def update_post(id: int, updated_post:PostBase, db: Session = Depends(get_
     updated_post2 = post_query.first()
 
     return updated_post2
+
+
+#User Module Level Operations
+@app.post("/users",response_model= userOut, status_code=status.HTTP_201_CREATED)
+async def create_users(user:userCreate, db: Session = Depends(get_db)):
+    createUser = Models.User(**user.dict())
+
+    db.add(createUser)
+
+    db.commit()
+
+
+    db.refresh(createUser)
+
+
+    return createUser
+
