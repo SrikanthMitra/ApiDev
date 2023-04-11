@@ -10,7 +10,7 @@ from . import Models
 from .database import engine, get_db
 from sqlalchemy.orm import Session
 Models.Base.metadata.create_all(bind=engine)
-from .schemas import Post
+from .schemas import PostBase , PostCreate , PostRespose
 app = FastAPI()
 
 while True:
@@ -41,10 +41,10 @@ async def get_posts(db: Session = Depends(get_db)):
     #cursor.execute("""SELECT * FROM posts""")
     #posts = cursor.fetchall()
     #print(posts)
-    return {"data": posts}
+    return posts
 
-@app.post("/posts",status_code=status.HTTP_201_CREATED)
-def createPost(post : Post, db: Session = Depends(get_db)):
+@app.post("/posts",status_code=status.HTTP_201_CREATED, response_model= PostRespose)
+def createPost(post : PostCreate, db: Session = Depends(get_db)):
      #print(**post.dict())
      new_post = Models.Post(**post.dict())
      db.add(new_post)
@@ -54,7 +54,7 @@ def createPost(post : Post, db: Session = Depends(get_db)):
      #new_post = cursor.fetchone()
      #conn.commit()
      # conveting into a dict for easy readablity
-     return {"data": new_post}
+     return new_post
 
 
 @app.get("/posts/{id}")
@@ -84,7 +84,7 @@ async def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-async def update_post(id: int, updated_post:Post, db: Session = Depends(get_db)):
+async def update_post(id: int, updated_post:PostBase, db: Session = Depends(get_db)):
     #cursor.execute("""UPDATE posts SET title = %s , content = %s , published = %s WHERE ID =  %s RETURNING *""",
         #              (post.title, post.content, post.publish, str(id)))
     #UPDATED_post = cursor.fetchone()
@@ -102,4 +102,4 @@ async def update_post(id: int, updated_post:Post, db: Session = Depends(get_db))
 
     updated_post2 = post_query.first()
 
-    return {"data": updated_post2}
+    return updated_post2
