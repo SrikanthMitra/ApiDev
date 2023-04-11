@@ -10,11 +10,9 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     pass #handles the same details of the postbase. kind of inheritance
 
-class PostRespose(BaseModel): #specify the data that we send back as resposne and make sure the validation is also done.
+class PostRespose(PostBase): #specify the data that we send back as resposne and make sure the validation is also done.
+    #further simplifying the response model. Importing from the PostBase class and making the changes for the id and timestamp
     id: int
-    title: str
-    content: str
-    publised : bool
     created_at : datetime
     class Config:
         orm_mode = True

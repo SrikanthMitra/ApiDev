@@ -1,7 +1,7 @@
 from fastapi import *
 from fastapi.params import Body
 from datetime import datetime
-from typing import Optional
+from typing import Optional , List
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from random import randrange
@@ -33,11 +33,11 @@ async def root():
 async def test_posts(db: Session = Depends(get_db)):
     posts = db.query(Models.Post).all()
     print(posts)
-    return {"data": posts}
+    return posts
 
-@app.get("/posts")
+@app.get("/posts", response_model= List[PostRespose]) #list is here to speficy that we need a list
 async def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(Models.Post).all()
+    posts = db.query(Models.Post).all() #this is coming as a list
     #cursor.execute("""SELECT * FROM posts""")
     #posts = cursor.fetchall()
     #print(posts)
@@ -57,7 +57,7 @@ def createPost(post : PostCreate, db: Session = Depends(get_db)):
      return new_post
 
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}" , response_model= PostRespose)
 async def get_post(id: int,db: Session = Depends(get_db)):
     #cursor.execute("""SELECT * FROM posts where id = %s """, str((id)))
     #post = cursor.fetchone()
@@ -65,7 +65,7 @@ async def get_post(id: int,db: Session = Depends(get_db)):
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id:{id} was not found")
-    return {"data": post}
+    return post
 
 @app.delete("/posts/{id}",status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(id: int, db: Session = Depends(get_db)):
@@ -83,7 +83,7 @@ async def delete_post(id: int, db: Session = Depends(get_db)):
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@app.put("/posts/{id}")
+@app.put("/posts/{id}", response_model= PostRespose)
 async def update_post(id: int, updated_post:PostBase, db: Session = Depends(get_db)):
     #cursor.execute("""UPDATE posts SET title = %s , content = %s , published = %s WHERE ID =  %s RETURNING *""",
         #              (post.title, post.content, post.publish, str(id)))
